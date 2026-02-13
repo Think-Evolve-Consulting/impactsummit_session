@@ -860,6 +860,12 @@ function App() {
           </a>
           {' '}website, which should be taken as the ground truth.
         </p>
+        <p className="text-white/40 text-xs mt-1">
+          Developed by{' '}
+          <a href="https://www.thinkevolveconsulting.com/resources/case-studies-articles/" target="_blank" rel="noopener noreferrer" className="text-purple-400 hover:text-purple-300 underline underline-offset-2">
+            Think Evolve Labs
+          </a>
+        </p>
       </footer>
     </div>
   );
