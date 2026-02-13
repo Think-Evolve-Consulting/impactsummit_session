@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
-import { Calendar, Search, X, Filter, Clock, MapPin, Users, Bookmark, BookmarkCheck, ChevronRight, Download } from 'lucide-react';
+import { Calendar, Search, X, Clock, MapPin, Users, Bookmark, BookmarkCheck, ChevronRight, Download, Tag, Layers, Layout } from 'lucide-react';
 import { useSessions, useFilteredSessions, useSchedule } from './hooks/useSessions';
-import { Session, FilterState, TOPICS, TIME_SLOTS } from './types/session';
+import { Session, FilterState, TIME_SLOTS, SECTORS, THEMATICS, FORMATS, classifyTag } from './types/session';
 import { cn } from '@/lib/utils';
 import { downloadICS } from '@/lib/calendar';
 import './index.css';
@@ -19,6 +19,9 @@ function App() {
     knowledgePartners: [],
     speakers: [],
     timeSlots: [],
+    sectors: [],
+    thematics: [],
+    formats: [],
   });
   const [selectedSession, setSelectedSession] = useState<Session | null>(null);
   const [showSchedulePanel, setShowSchedulePanel] = useState(false);
@@ -35,6 +38,19 @@ function App() {
   );
   const uniqueSpeakers = useMemo(() =>
     [...new Set(sessions.flatMap((s) => s.speakers))].filter(Boolean).sort(),
+    [sessions]
+  );
+
+  const usedSectors = useMemo(() =>
+    SECTORS.filter((s) => sessions.some((sess) => sess.tags?.includes(s))),
+    [sessions]
+  );
+  const usedThematics = useMemo(() =>
+    THEMATICS.filter((t) => sessions.some((sess) => sess.tags?.includes(t))),
+    [sessions]
+  );
+  const usedFormats = useMemo(() =>
+    FORMATS.filter((f) => sessions.some((sess) => sess.tags?.includes(f))),
     [sessions]
   );
 
@@ -83,7 +99,7 @@ function App() {
   };
 
   const clearFilters = () => {
-    setFilters({ topics: [], dates: [], times: [], locations: [], knowledgePartners: [], speakers: [], timeSlots: [] });
+    setFilters({ topics: [], dates: [], times: [], locations: [], knowledgePartners: [], speakers: [], timeSlots: [], sectors: [], thematics: [], formats: [] });
     setSearchQuery('');
     setPartnerInput('');
     setSpeakerInput('');
@@ -91,7 +107,8 @@ function App() {
 
   const hasActiveFilters = filters.topics.length > 0 || filters.dates.length > 0 ||
     filters.locations.length > 0 || filters.knowledgePartners.length > 0 ||
-    filters.speakers.length > 0 || filters.timeSlots.length > 0;
+    filters.speakers.length > 0 || filters.timeSlots.length > 0 ||
+    filters.sectors.length > 0 || filters.thematics.length > 0 || filters.formats.length > 0;
 
   if (loading) {
     return (
@@ -118,7 +135,7 @@ function App() {
     <div className="min-h-screen bg-[#0a0f1c]" onClick={() => { setShowPartnerSuggestions(false); setShowSpeakerSuggestions(false); }}>
       {/* Navigation */}
       <nav className="sticky top-0 z-40 glass-nav">
-        <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
+        <div className="max-w-[1800px] mx-auto px-6 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 accent-gradient rounded-lg flex items-center justify-center text-white font-bold text-sm">
               AI
@@ -148,7 +165,57 @@ function App() {
       </nav>
 
       {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-6 py-8">
+      <div className="flex max-w-[1800px] mx-auto px-4 py-8 gap-4">
+        {/* Left Sidebar - Sector/Domain + Format */}
+        <aside className="hidden xl:block w-60 shrink-0 sticky top-20 self-start max-h-[calc(100vh-5rem)] overflow-y-auto space-y-4 pr-1 scrollbar-hide">
+          <div className="glass-card p-4">
+            <div className="flex items-center gap-2 mb-3">
+              <Layers size={16} className="text-rose-400 shrink-0" />
+              <span className="text-white/50 text-xs font-medium uppercase tracking-wider">Sector / Domain</span>
+            </div>
+            <div className="flex flex-col gap-1.5">
+              {usedSectors.map((sector) => (
+                <button
+                  key={sector}
+                  onClick={() => toggleFilter('sectors', sector)}
+                  className={cn(
+                    "px-3 py-1.5 rounded-lg text-xs font-medium text-left transition-all",
+                    filters.sectors.includes(sector)
+                      ? "bg-rose-500/30 text-rose-300 border border-rose-500/50"
+                      : "bg-white/5 text-white/60 hover:bg-white/10 border border-white/10"
+                  )}
+                >
+                  {sector}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="glass-card p-4">
+            <div className="flex items-center gap-2 mb-3">
+              <Layout size={16} className="text-teal-400 shrink-0" />
+              <span className="text-white/50 text-xs font-medium uppercase tracking-wider">Format</span>
+            </div>
+            <div className="flex flex-col gap-1.5">
+              {usedFormats.map((format) => (
+                <button
+                  key={format}
+                  onClick={() => toggleFilter('formats', format)}
+                  className={cn(
+                    "px-3 py-1.5 rounded-lg text-xs font-medium text-left transition-all",
+                    filters.formats.includes(format)
+                      ? "bg-teal-500/30 text-teal-300 border border-teal-500/50"
+                      : "bg-white/5 text-white/60 hover:bg-white/10 border border-white/10"
+                  )}
+                >
+                  {format}
+                </button>
+              ))}
+            </div>
+          </div>
+        </aside>
+
+        <main className="flex-1 min-w-0">
         {/* Mobile Search */}
         <div className="md:hidden mb-6">
           <div className="relative">
@@ -259,32 +326,6 @@ function App() {
             </div>
           </div>
 
-          {/* Topic Filters - Small Cards Row */}
-          <div className="col-span-12 row-span-1 glass-card p-4">
-            <div className="flex items-center gap-4 overflow-x-auto scrollbar-hide">
-              <Filter size={18} className="text-white/50 shrink-0" />
-              {TOPICS.slice(0, 8).map((topic) => (
-                <button
-                  key={topic}
-                  onClick={() => toggleFilter('topics', topic)}
-                  className={cn(
-                    "px-4 py-2 rounded-xl text-sm font-medium whitespace-nowrap transition-all",
-                    filters.topics.includes(topic)
-                      ? "accent-gradient text-white"
-                      : "bg-white/5 text-white/70 hover:bg-white/10 border border-white/10"
-                  )}
-                >
-                  {topic}
-                </button>
-              ))}
-              {hasActiveFilters && (
-                <button onClick={clearFilters} className="text-white/50 hover:text-white text-sm flex items-center gap-1">
-                  <X size={14} /> Clear
-                </button>
-              )}
-            </div>
-          </div>
-
           {/* Venue & Time Slot Filters */}
           <div className="col-span-12 sm:col-span-6 row-span-1 glass-card p-4">
             <div className="flex items-center gap-3 overflow-x-auto scrollbar-hide">
@@ -304,6 +345,11 @@ function App() {
                   {loc.length > 20 ? loc.substring(0, 20) + '...' : loc}
                 </button>
               ))}
+              {hasActiveFilters && (
+                <button onClick={clearFilters} className="text-white/50 hover:text-white text-xs flex items-center gap-1 shrink-0">
+                  <X size={14} /> Clear all
+                </button>
+              )}
             </div>
           </div>
 
@@ -323,6 +369,78 @@ function App() {
                   )}
                 >
                   {slot}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Sector/Domain Filter - inline for mobile, hidden on xl (shown in sidebar) */}
+          <div className="col-span-12 row-span-1 glass-card p-4 xl:hidden">
+            <div className="flex items-center gap-3 mb-2">
+              <Layers size={16} className="text-rose-400 shrink-0" />
+              <span className="text-white/50 text-xs shrink-0">Sector / Domain:</span>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {usedSectors.map((sector) => (
+                <button
+                  key={sector}
+                  onClick={() => toggleFilter('sectors', sector)}
+                  className={cn(
+                    "px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-all",
+                    filters.sectors.includes(sector)
+                      ? "bg-rose-500/30 text-rose-300 border border-rose-500/50"
+                      : "bg-white/5 text-white/60 hover:bg-white/10 border border-white/10"
+                  )}
+                >
+                  {sector}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Thematic Filter - inline for mobile, hidden on xl (shown in sidebar) */}
+          <div className="col-span-12 row-span-1 glass-card p-4 xl:hidden">
+            <div className="flex items-center gap-3 mb-2">
+              <Tag size={16} className="text-amber-400 shrink-0" />
+              <span className="text-white/50 text-xs shrink-0">Thematic:</span>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {usedThematics.map((thematic) => (
+                <button
+                  key={thematic}
+                  onClick={() => toggleFilter('thematics', thematic)}
+                  className={cn(
+                    "px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-all",
+                    filters.thematics.includes(thematic)
+                      ? "bg-amber-500/30 text-amber-300 border border-amber-500/50"
+                      : "bg-white/5 text-white/60 hover:bg-white/10 border border-white/10"
+                  )}
+                >
+                  {thematic}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Format Filter - inline for mobile, hidden on xl (shown in sidebar) */}
+          <div className="col-span-12 sm:col-span-6 row-span-1 glass-card p-4 xl:hidden">
+            <div className="flex items-center gap-3 mb-2">
+              <Layout size={16} className="text-teal-400 shrink-0" />
+              <span className="text-white/50 text-xs shrink-0">Format:</span>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {usedFormats.map((format) => (
+                <button
+                  key={format}
+                  onClick={() => toggleFilter('formats', format)}
+                  className={cn(
+                    "px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-all",
+                    filters.formats.includes(format)
+                      ? "bg-teal-500/30 text-teal-300 border border-teal-500/50"
+                      : "bg-white/5 text-white/60 hover:bg-white/10 border border-white/10"
+                  )}
+                >
+                  {format}
                 </button>
               ))}
             </div>
@@ -545,6 +663,33 @@ function App() {
         </div>
       </main>
 
+        {/* Right Sidebar - Thematic */}
+        <aside className="hidden xl:block w-60 shrink-0 sticky top-20 self-start max-h-[calc(100vh-5rem)] overflow-y-auto space-y-4 pl-1 scrollbar-hide">
+          <div className="glass-card p-4">
+            <div className="flex items-center gap-2 mb-3">
+              <Tag size={16} className="text-amber-400 shrink-0" />
+              <span className="text-white/50 text-xs font-medium uppercase tracking-wider">Thematic</span>
+            </div>
+            <div className="flex flex-col gap-1.5">
+              {usedThematics.map((thematic) => (
+                <button
+                  key={thematic}
+                  onClick={() => toggleFilter('thematics', thematic)}
+                  className={cn(
+                    "px-3 py-1.5 rounded-lg text-xs font-medium text-left transition-all",
+                    filters.thematics.includes(thematic)
+                      ? "bg-amber-500/30 text-amber-300 border border-amber-500/50"
+                      : "bg-white/5 text-white/60 hover:bg-white/10 border border-white/10"
+                  )}
+                >
+                  {thematic}
+                </button>
+              ))}
+            </div>
+          </div>
+        </aside>
+      </div>
+
       {/* Session Modal */}
       {selectedSession && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={() => setSelectedSession(null)}>
@@ -603,6 +748,23 @@ function App() {
                     {selectedSession.knowledge_partners.map((partner, idx) => (
                       <span key={idx} className="tag-cyan px-3 py-1 rounded-full text-sm">{partner}</span>
                     ))}
+                  </div>
+                </div>
+              )}
+
+              {selectedSession.tags?.length > 0 && (
+                <div className="mb-6">
+                  <h4 className="text-white font-semibold mb-3">Tags</h4>
+                  <div className="flex flex-wrap gap-2">
+                    {selectedSession.tags.map((tag, idx) => {
+                      const cat = classifyTag(tag);
+                      const colorClass = cat === 'sector' ? 'bg-rose-500/20 text-rose-300 border-rose-500/30'
+                        : cat === 'format' ? 'bg-teal-500/20 text-teal-300 border-teal-500/30'
+                        : 'bg-amber-500/20 text-amber-300 border-amber-500/30';
+                      return (
+                        <span key={idx} className={`px-3 py-1 rounded-full text-xs font-medium border ${colorClass}`}>{tag}</span>
+                      );
+                    })}
                   </div>
                 </div>
               )}

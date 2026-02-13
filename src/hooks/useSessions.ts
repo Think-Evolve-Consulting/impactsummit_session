@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { Session, FilterState, inferTopic } from '../types/session';
+import { Session, FilterState, inferTopic, classifyTag } from '../types/session';
 
 interface RawSession {
   title: string;
@@ -10,6 +10,7 @@ interface RawSession {
   speakers: string[];
   description: string;
   knowledge_partners: string[];
+  tags?: string[];
 }
 
 export function useSessions() {
@@ -25,6 +26,7 @@ export function useSessions() {
           ...session,
           id: `session-${index}`,
           topic: inferTopic(session.title, session.description),
+          tags: session.tags || [],
         }));
         setSessions(processedSessions);
         setLoading(false);
@@ -105,6 +107,24 @@ export function useFilteredSessions(
         s.speakers.some((sp) =>
           speakerTerms.some((term) => sp.toLowerCase().includes(term.toLowerCase()))
         )
+      );
+    }
+
+    if (filters.sectors.length > 0) {
+      filtered = filtered.filter((s) =>
+        s.tags.some((tag) => classifyTag(tag) === 'sector' && filters.sectors.includes(tag))
+      );
+    }
+
+    if (filters.thematics.length > 0) {
+      filtered = filtered.filter((s) =>
+        s.tags.some((tag) => classifyTag(tag) === 'thematic' && filters.thematics.includes(tag))
+      );
+    }
+
+    if (filters.formats.length > 0) {
+      filtered = filtered.filter((s) =>
+        s.tags.some((tag) => classifyTag(tag) === 'format' && filters.formats.includes(tag))
       );
     }
 

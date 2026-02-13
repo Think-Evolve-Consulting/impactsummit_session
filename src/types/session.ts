@@ -9,6 +9,7 @@ export interface Session {
   description: string;
   knowledge_partners: string[];
   topic?: string;
+  tags: string[];
 }
 
 export interface FilterState {
@@ -19,9 +20,76 @@ export interface FilterState {
   knowledgePartners: string[];
   speakers: string[];
   timeSlots: string[];
+  sectors: string[];
+  thematics: string[];
+  formats: string[];
 }
 
 export const TIME_SLOTS = ['Morning', 'Afternoon', 'Evening'] as const;
+
+export const SECTORS = [
+  'Healthcare',
+  'Agriculture',
+  'Education',
+  'Finance & Fintech',
+  'Defence & National Security',
+  'Energy & Climate',
+  'Cybersecurity',
+  'Frontier Tech (Quantum, Robotics, Semiconductor)',
+  'Creative Industries & Media',
+  'Smart Cities & Urban Development',
+  'Legal & Judiciary',
+  'Disaster Management',
+  'Telecom & Connectivity',
+  'Transportation & Logistics',
+] as const;
+
+export const THEMATICS = [
+  'AI Governance & Policy',
+  'AI Safety & Trust',
+  'Responsible & Ethical AI',
+  'AI Infrastructure & Compute',
+  'Data Governance & Open Data',
+  'Digital Public Infrastructure (DPI)',
+  'Generative AI, LLMs & Agentic AI',
+  'Multilingual AI & Language Tech',
+  'Inclusion & Equity',
+  'Women & Gender in AI',
+  'Youth & Children',
+  'Skilling & Workforce Development',
+  'Startups & Innovation Ecosystem',
+  'Global South & Development Cooperation',
+  'Geopolitics & Bilateral Cooperation',
+  'Open Source AI',
+  'Sovereign AI',
+  'AI for Social Good & Nonprofits',
+  'Intellectual Property & Copyright',
+  'Blockchain & Digital Trust Infra',
+  'AI Investment & Funding',
+  'Standards & Interoperability',
+  'AI Evaluation & Benchmarking',
+  'India Focus',
+] as const;
+
+export const FORMATS = [
+  'Keynote',
+  'Leadership Talk',
+  'Panel / Roundtable',
+  'Hackathon / Competition',
+  'Masterclass',
+  'Workshop',
+  'Fireside Chat',
+  'Inaugural / Launch',
+] as const;
+
+const SECTOR_SET = new Set<string>(SECTORS);
+const FORMAT_SET = new Set<string>(FORMATS);
+
+export function classifyTag(tag: string): 'sector' | 'thematic' | 'format' {
+  if (SECTOR_SET.has(tag)) return 'sector';
+  if (FORMAT_SET.has(tag)) return 'format';
+  return 'thematic';
+}
 
 export const TOPICS = [
   'AI Governance',
