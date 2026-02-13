@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { Calendar, Search, X, Clock, MapPin, Users, Bookmark, BookmarkCheck, ChevronRight, Download, Tag, Layers, Layout } from 'lucide-react';
+import { Calendar, Search, X, Clock, MapPin, Users, Bookmark, BookmarkCheck, ChevronRight, Download, Tag, Layers, Layout, Github } from 'lucide-react';
 import { useSessions, useFilteredSessions, useSchedule } from './hooks/useSessions';
 import { Session, FilterState, TIME_SLOTS, SECTORS, THEMATICS, FORMATS, classifyTag } from './types/session';
 import { cn } from '@/lib/utils';
@@ -137,9 +137,16 @@ function App() {
       <nav className="sticky top-0 z-40 glass-nav">
         <div className="max-w-[1800px] mx-auto px-6 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 accent-gradient rounded-lg flex items-center justify-center text-white font-bold text-sm">
-              AI
-            </div>
+            <a
+              href="https://github.com/Think-Evolve-Consulting/impactsummit_session"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="w-8 h-8 rounded-lg flex items-center justify-center text-white/70 hover:text-white hover:bg-white/10 transition-colors"
+              title="View on GitHub"
+            >
+              <Github size={20} />
+            </a>
+            <img src="/ai-summit-logo.png" alt="AI Impact Summit 2026" className="h-10 w-auto" />
             <span className="font-semibold text-white hidden sm:block">India AI Summit 2026</span>
           </div>
           <div className="flex items-center gap-4">
