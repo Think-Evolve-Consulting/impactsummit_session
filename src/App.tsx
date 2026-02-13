@@ -850,6 +850,17 @@ function App() {
           </div>
         </div>
       )}
+
+      {/* Disclaimer Footer */}
+      <footer className="border-t border-white/10 py-4 px-6 text-center">
+        <p className="text-white/40 text-xs">
+          Session data is derived from the official{' '}
+          <a href="https://impact.indiaai.gov.in/sessions" target="_blank" rel="noopener noreferrer" className="text-purple-400 hover:text-purple-300 underline underline-offset-2">
+            India AI Impact Summit 2026
+          </a>
+          {' '}website, which should be taken as the ground truth.
+        </p>
+      </footer>
     </div>
   );
 }
