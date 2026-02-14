@@ -1,8 +1,10 @@
 
 
 
-## Video Walkthrough
+# Video Walkthrough
 <video src="https://www.youtube.com/watch?v=lD9tDBDjhX8" width="600" controls></video>
+
+[![Video Alt Text](https://img.youtube.com/vi/VIDEO_ID/0.jpg)]([https://www.youtube.com/watch?v=VIDEO_ID](https://www.youtube.com/watch?v=lD9tDBDjhX8))
 
 
 # React + TypeScript + Vite
