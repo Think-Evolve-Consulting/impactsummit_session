@@ -162,15 +162,15 @@ export function convert24to12(time24: string): string {
 /**
  * Generate dropdown options for time selection
  * Returns array of times in 12-hour format with 30-minute increments
- * Range: 9:30 AM to 5:30 PM
+ * Range: 8:00 AM to 10:00 PM
  */
 export function generateTimeOptions(): string[] {
   const options: string[] = [];
-  // Start at 9:30 AM (hour=9, minute=30) and end at 5:30 PM (hour=17, minute=30)
-  let currentHour = 9;
-  let currentMinute = 30;
+  // Start at 8:00 AM (hour=8, minute=0) and end at 10:00 PM (hour=22, minute=0)
+  let currentHour = 8;
+  let currentMinute = 0;
 
-  while (currentHour < 17 || (currentHour === 17 && currentMinute <= 30)) {
+  while (currentHour < 22 || (currentHour === 22 && currentMinute === 0)) {
     const period = currentHour < 12 ? 'AM' : 'PM';
     const displayHour = currentHour === 0 ? 12 : currentHour > 12 ? currentHour - 12 : currentHour;
     const timeStr = `${displayHour}:${String(currentMinute).padStart(2, '0')} ${period}`;

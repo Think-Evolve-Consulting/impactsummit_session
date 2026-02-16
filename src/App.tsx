@@ -34,8 +34,11 @@ function App() {
 
   const { ranges: availabilityRanges, rememberAvailability, addTimeRange, removeTimeRange, clearAllRanges, toggleRemember } = useAvailability();
   const [showAvailabilityPanel, setShowAvailabilityPanel] = useState(false);
-  const [availStartTime, setAvailStartTime] = useState('9:00 AM');
-  const [availEndTime, setAvailEndTime] = useState('5:00 PM');
+  const [availStartTime, setAvailStartTime] = useState('9:00');
+  const [availEndTime, setAvailEndTime] = useState('5:00');
+  const [startPeriod, setStartPeriod] = useState<'AM' | 'PM'>('AM');
+  const [endPeriod, setEndPeriod] = useState<'AM' | 'PM'>('PM');
+  const [timeRangeError, setTimeRangeError] = useState<string>('');
 
   const uniqueDates = useMemo(() => [...new Set(sessions.map((s) => s.date))].sort(), [sessions]);
   const uniqueLocations = useMemo(() => [...new Set(sessions.map((s) => s.location))].sort(), [sessions]);
@@ -414,39 +417,118 @@ function App() {
           <div className="col-span-12 sm:col-span-6 row-span-1 glass-card p-4">
             <div className="flex items-center gap-3 mb-3">
               <Clock size={16} className="text-purple-400 shrink-0" />
-              <span className="text-white/50 text-xs shrink-0">Custom Time Range:</span>
+              <span className="text-white/50 text-xs shrink-0">Custom Time Range (8 AM - 10 PM):</span>
             </div>
 
-            <div className="flex gap-2 items-center flex-wrap mb-3">
-              <select
-                value={availStartTime}
-                onChange={(e) => setAvailStartTime(e.target.value)}
-                className="flex-1 min-w-[110px] h-9 px-2 rounded-lg bg-[#1a1f2e] border border-white/10 text-white text-sm focus:outline-none focus:border-purple-500/50 [&>option]:bg-[#1a1f2e] [&>option]:text-white"
-              >
-                {generateTimeOptions().map(t => <option key={t} value={t} className="bg-[#1a1f2e] text-white">{t}</option>)}
-              </select>
-              <span className="text-white/50 text-sm">to</span>
-              <select
-                value={availEndTime}
-                onChange={(e) => setAvailEndTime(e.target.value)}
-                className="flex-1 min-w-[110px] h-9 px-2 rounded-lg bg-[#1a1f2e] border border-white/10 text-white text-sm focus:outline-none focus:border-purple-500/50 [&>option]:bg-[#1a1f2e] [&>option]:text-white"
-              >
-                {generateTimeOptions().map(t => <option key={t} value={t} className="bg-[#1a1f2e] text-white">{t}</option>)}
-              </select>
-              <button
-                onClick={() => {
-                  const start24 = convert12to24(availStartTime);
-                  const end24 = convert12to24(availEndTime);
-                  if (start24 < end24) {
-                    addTimeRange(start24, end24);
-                  }
-                }}
-                disabled={convert12to24(availStartTime) >= convert12to24(availEndTime)}
-                className="px-3 py-1.5 bg-purple-500/20 text-purple-300 rounded-lg text-xs font-medium hover:bg-purple-500/30 border border-purple-500/30 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
-              >
-                Add
-              </button>
+            {/* Time Inputs */}
+            <div className="mb-3 space-y-2">
+              {/* Start Time Row */}
+              <div className="flex gap-2 items-center">
+                <span className="text-white/60 text-xs w-12">From:</span>
+                <input
+                  type="text"
+                  value={availStartTime}
+                  onChange={(e) => setAvailStartTime(e.target.value)}
+                  placeholder="9:00"
+                  className="w-20 h-9 px-3 rounded-lg bg-[#1a1f2e] border border-white/10 text-white text-sm focus:outline-none focus:border-purple-500/50 placeholder:text-white/40"
+                />
+                <div className="flex gap-1">
+                  <button
+                    onClick={() => setStartPeriod('AM')}
+                    className={cn(
+                      "px-3 py-1.5 rounded-lg text-xs font-medium transition-all",
+                      startPeriod === 'AM'
+                        ? "bg-purple-500/30 text-purple-300 border border-purple-500/50"
+                        : "bg-white/5 text-white/60 hover:bg-white/10 border border-white/10"
+                    )}
+                  >
+                    AM
+                  </button>
+                  <button
+                    onClick={() => setStartPeriod('PM')}
+                    className={cn(
+                      "px-3 py-1.5 rounded-lg text-xs font-medium transition-all",
+                      startPeriod === 'PM'
+                        ? "bg-purple-500/30 text-purple-300 border border-purple-500/50"
+                        : "bg-white/5 text-white/60 hover:bg-white/10 border border-white/10"
+                    )}
+                  >
+                    PM
+                  </button>
+                </div>
+              </div>
+
+              {/* End Time Row */}
+              <div className="flex gap-2 items-center">
+                <span className="text-white/60 text-xs w-12">To:</span>
+                <input
+                  type="text"
+                  value={availEndTime}
+                  onChange={(e) => setAvailEndTime(e.target.value)}
+                  placeholder="5:00"
+                  className="w-20 h-9 px-3 rounded-lg bg-[#1a1f2e] border border-white/10 text-white text-sm focus:outline-none focus:border-purple-500/50 placeholder:text-white/40"
+                />
+                <div className="flex gap-1">
+                  <button
+                    onClick={() => setEndPeriod('AM')}
+                    className={cn(
+                      "px-3 py-1.5 rounded-lg text-xs font-medium transition-all",
+                      endPeriod === 'AM'
+                        ? "bg-purple-500/30 text-purple-300 border border-purple-500/50"
+                        : "bg-white/5 text-white/60 hover:bg-white/10 border border-white/10"
+                    )}
+                  >
+                    AM
+                  </button>
+                  <button
+                    onClick={() => setEndPeriod('PM')}
+                    className={cn(
+                      "px-3 py-1.5 rounded-lg text-xs font-medium transition-all",
+                      endPeriod === 'PM'
+                        ? "bg-purple-500/30 text-purple-300 border border-purple-500/50"
+                        : "bg-white/5 text-white/60 hover:bg-white/10 border border-white/10"
+                    )}
+                  >
+                    PM
+                  </button>
+                </div>
+              </div>
             </div>
+
+            {/* Add Button */}
+            <button
+              onClick={() => {
+                setTimeRangeError('');
+                const startTimeStr = `${availStartTime.trim()} ${startPeriod}`;
+                const endTimeStr = `${availEndTime.trim()} ${endPeriod}`;
+                const start24 = convert12to24(startTimeStr);
+                const end24 = convert12to24(endTimeStr);
+
+                // Validate time range (8 AM = 08:00, 10 PM = 22:00)
+                if (start24 < '08:00' || end24 > '22:00') {
+                  setTimeRangeError('Time must be between 8 AM and 10 PM');
+                  return;
+                }
+
+                if (start24 >= end24) {
+                  setTimeRangeError('Start time must be before end time');
+                  return;
+                }
+
+                addTimeRange(start24, end24);
+                setTimeRangeError('');
+              }}
+              className="w-full px-3 py-2 bg-purple-500/20 text-purple-300 rounded-lg text-xs font-medium hover:bg-purple-500/30 border border-purple-500/30 mb-3"
+            >
+              Add Time Range
+            </button>
+
+            {/* Error Message */}
+            {timeRangeError && (
+              <div className="mb-3 p-2 rounded-lg bg-red-500/10 border border-red-500/30 text-red-300 text-xs">
+                {timeRangeError}
+              </div>
+            )}
 
             {/* Active Ranges */}
             {availabilityRanges.length > 0 && (
@@ -709,7 +791,16 @@ function App() {
           {/* Session Grid */}
           {filteredSessions.length === 0 ? (
             <div className="col-span-12 glass-card p-12 text-center">
-              <p className="text-white/50 mb-4">No sessions match your filters</p>
+              <p className="text-white/50 mb-2">
+                {availabilityRanges.length > 0
+                  ? 'There are no sessions scheduled in the given time frame'
+                  : 'No sessions match your filters'}
+              </p>
+              <p className="text-white/40 text-sm mb-4">
+                {availabilityRanges.length > 0
+                  ? 'Try adjusting your time range or clear filters to see all sessions'
+                  : 'Try adjusting your filters or clear them to see all sessions'}
+              </p>
               <button onClick={clearFilters} className="text-purple-400 hover:text-purple-300">Clear filters</button>
             </div>
           ) : (
