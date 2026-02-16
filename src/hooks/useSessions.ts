@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { Session, FilterState, inferTopic, classifyTag, TimeRange } from '../types/session';
 import { parseSessionTime, timeRangesOverlap } from '../lib/timeUtils';
+import { createSpeakerNameMapping, normalizeSpeakers } from '../lib/speakerUtils';
 
 interface RawSession {
   title: string;
@@ -23,11 +24,17 @@ export function useSessions() {
     fetch('/data/sessions.json')
       .then((res) => res.json())
       .then((data: RawSession[]) => {
+        // Create speaker name mapping to consolidate variations
+        const allSpeakers = data.flatMap(session => session.speakers);
+        const speakerMapping = createSpeakerNameMapping(allSpeakers);
+
+        // Process sessions with normalized speaker names
         const processedSessions = data.map((session, index) => ({
           ...session,
           id: `session-${index}`,
           topic: inferTopic(session.title, session.description),
           tags: session.tags || [],
+          speakers: normalizeSpeakers(session.speakers, speakerMapping),
         }));
         setSessions(processedSessions);
         setLoading(false);
