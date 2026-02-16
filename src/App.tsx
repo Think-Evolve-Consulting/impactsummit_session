@@ -1,9 +1,11 @@
 import { useState, useMemo } from 'react';
 import { Calendar, Search, X, Clock, MapPin, Users, Bookmark, BookmarkCheck, ChevronRight, Download, Tag, Layers, Layout, Github } from 'lucide-react';
 import { useSessions, useFilteredSessions, useSchedule } from './hooks/useSessions';
+import { useAvailability } from './hooks/useAvailability';
 import { Session, FilterState, TIME_SLOTS, SECTORS, THEMATICS, FORMATS, classifyTag } from './types/session';
 import { cn } from '@/lib/utils';
 import { downloadICS } from '@/lib/calendar';
+import { presetToTimeRange, generateTimeOptions, convert12to24, convert24to12 } from './lib/timeUtils';
 import './index.css';
 
 function App() {
@@ -29,6 +31,11 @@ function App() {
   const [speakerInput, setSpeakerInput] = useState('');
   const [showPartnerSuggestions, setShowPartnerSuggestions] = useState(false);
   const [showSpeakerSuggestions, setShowSpeakerSuggestions] = useState(false);
+
+  const { ranges: availabilityRanges, rememberAvailability, addTimeRange, removeTimeRange, clearAllRanges, toggleRemember } = useAvailability();
+  const [showAvailabilityPanel, setShowAvailabilityPanel] = useState(false);
+  const [availStartTime, setAvailStartTime] = useState('9:00 AM');
+  const [availEndTime, setAvailEndTime] = useState('5:00 PM');
 
   const uniqueDates = useMemo(() => [...new Set(sessions.map((s) => s.date))].sort(), [sessions]);
   const uniqueLocations = useMemo(() => [...new Set(sessions.map((s) => s.location))].sort(), [sessions]);
@@ -70,7 +77,7 @@ function App() {
       .slice(0, 6);
   }, [speakerInput, uniqueSpeakers, filters.speakers]);
 
-  const filteredSessions = useFilteredSessions(sessions, filters, searchQuery, speakerInput, partnerInput);
+  const filteredSessions = useFilteredSessions(sessions, filters, searchQuery, speakerInput, partnerInput, availabilityRanges);
   const scheduledSessions = sessions.filter((s) => schedule.includes(s.id));
 
   const featuredSession = filteredSessions[0];
@@ -103,12 +110,14 @@ function App() {
     setSearchQuery('');
     setPartnerInput('');
     setSpeakerInput('');
+    clearAllRanges();
   };
 
   const hasActiveFilters = filters.topics.length > 0 || filters.dates.length > 0 ||
     filters.locations.length > 0 || filters.knowledgePartners.length > 0 ||
     filters.speakers.length > 0 || filters.timeSlots.length > 0 ||
-    filters.sectors.length > 0 || filters.thematics.length > 0 || filters.formats.length > 0;
+    filters.sectors.length > 0 || filters.thematics.length > 0 || filters.formats.length > 0 ||
+    availabilityRanges.length > 0;
 
   if (loading) {
     return (
@@ -360,25 +369,115 @@ function App() {
             </div>
           </div>
 
+          {/* Time & Availability Filter */}
           <div className="col-span-12 sm:col-span-6 row-span-1 glass-card p-4">
-            <div className="flex items-center gap-3 overflow-x-auto scrollbar-hide">
+            <div className="flex items-center gap-3 mb-2">
               <Clock size={16} className="text-purple-400 shrink-0" />
               <span className="text-white/50 text-xs shrink-0">Time:</span>
-              {TIME_SLOTS.map((slot) => (
-                <button
-                  key={slot}
-                  onClick={() => toggleFilter('timeSlots', slot)}
-                  className={cn(
-                    "px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-all",
-                    filters.timeSlots.includes(slot)
-                      ? "bg-purple-500/30 text-purple-300 border border-purple-500/50"
-                      : "bg-white/5 text-white/60 hover:bg-white/10 border border-white/10"
-                  )}
-                >
-                  {slot}
-                </button>
-              ))}
             </div>
+
+            {/* Quick Presets */}
+            <div className="flex gap-2 flex-wrap">
+              {TIME_SLOTS.map((slot) => {
+                const range = presetToTimeRange(slot);
+                const isActive = availabilityRanges.some(
+                  r => r.startTime === range.startTime && r.endTime === range.endTime
+                );
+                return (
+                  <button
+                    key={slot}
+                    onClick={() => {
+                      if (isActive) {
+                        const match = availabilityRanges.find(
+                          r => r.startTime === range.startTime
+                        );
+                        if (match) removeTimeRange(match.id);
+                      } else {
+                        addTimeRange(range.startTime, range.endTime);
+                      }
+                    }}
+                    className={cn(
+                      "px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-all",
+                      isActive
+                        ? "bg-purple-500/30 text-purple-300 border border-purple-500/50"
+                        : "bg-white/5 text-white/60 hover:bg-white/10 border border-white/10"
+                    )}
+                  >
+                    {slot}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Custom Time Range */}
+          <div className="col-span-12 sm:col-span-6 row-span-1 glass-card p-4">
+            <div className="flex items-center gap-3 mb-3">
+              <Clock size={16} className="text-purple-400 shrink-0" />
+              <span className="text-white/50 text-xs shrink-0">Custom Time Range:</span>
+            </div>
+
+            <div className="flex gap-2 items-center flex-wrap mb-3">
+              <select
+                value={availStartTime}
+                onChange={(e) => setAvailStartTime(e.target.value)}
+                className="flex-1 min-w-[110px] h-9 px-2 rounded-lg bg-[#1a1f2e] border border-white/10 text-white text-sm focus:outline-none focus:border-purple-500/50 [&>option]:bg-[#1a1f2e] [&>option]:text-white"
+              >
+                {generateTimeOptions().map(t => <option key={t} value={t} className="bg-[#1a1f2e] text-white">{t}</option>)}
+              </select>
+              <span className="text-white/50 text-sm">to</span>
+              <select
+                value={availEndTime}
+                onChange={(e) => setAvailEndTime(e.target.value)}
+                className="flex-1 min-w-[110px] h-9 px-2 rounded-lg bg-[#1a1f2e] border border-white/10 text-white text-sm focus:outline-none focus:border-purple-500/50 [&>option]:bg-[#1a1f2e] [&>option]:text-white"
+              >
+                {generateTimeOptions().map(t => <option key={t} value={t} className="bg-[#1a1f2e] text-white">{t}</option>)}
+              </select>
+              <button
+                onClick={() => {
+                  const start24 = convert12to24(availStartTime);
+                  const end24 = convert12to24(availEndTime);
+                  if (start24 < end24) {
+                    addTimeRange(start24, end24);
+                  }
+                }}
+                disabled={convert12to24(availStartTime) >= convert12to24(availEndTime)}
+                className="px-3 py-1.5 bg-purple-500/20 text-purple-300 rounded-lg text-xs font-medium hover:bg-purple-500/30 border border-purple-500/30 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
+              >
+                Add
+              </button>
+            </div>
+
+            {/* Active Ranges */}
+            {availabilityRanges.length > 0 && (
+              <div className="flex flex-wrap gap-1.5 mb-2">
+                {availabilityRanges.map((range) => (
+                  <span
+                    key={range.id}
+                    className="flex items-center gap-1 px-2 py-1 rounded-lg bg-purple-500/20 text-purple-300 text-xs font-medium border border-purple-500/30"
+                  >
+                    {convert24to12(range.startTime)} - {convert24to12(range.endTime)}
+                    <button
+                      onClick={() => removeTimeRange(range.id)}
+                      className="hover:text-white"
+                    >
+                      <X size={12} />
+                    </button>
+                  </span>
+                ))}
+              </div>
+            )}
+
+            {/* Remember Toggle */}
+            <label className="flex items-center gap-2 text-xs text-white/60 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={rememberAvailability}
+                onChange={toggleRemember}
+                className="w-3 h-3 accent-purple-500"
+              />
+              Remember my availability
+            </label>
           </div>
 
           {/* Sector/Domain Filter - inline for mobile, hidden on xl (shown in sidebar) */}

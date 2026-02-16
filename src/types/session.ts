@@ -25,6 +25,12 @@ export interface FilterState {
   formats: string[];
 }
 
+export interface TimeRange {
+  id: string;
+  startTime: string; // "09:00" (24-hour format)
+  endTime: string;   // "17:00"
+}
+
 export const TIME_SLOTS = ['Morning', 'Afternoon', 'Evening'] as const;
 
 export const SECTORS = [
