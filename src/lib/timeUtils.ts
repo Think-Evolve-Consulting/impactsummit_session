@@ -58,16 +58,6 @@ export function timeToMinutes(timeStr: string): number | null {
 }
 
 /**
- * Convert minutes from midnight to time string in 24-hour format
- * E.g., 570 → "09:30"
- */
-export function minutesToTime(minutes: number): string {
-  const hours = Math.floor(minutes / 60);
-  const mins = minutes % 60;
-  return `${String(hours).padStart(2, '0')}:${String(mins).padStart(2, '0')}`;
-}
-
-/**
  * Check if session time overlaps with any availability range
  * Uses partial overlap matching (recommended by user)
  */
@@ -159,30 +149,3 @@ export function convert24to12(time24: string): string {
   return `${displayHour}:${minutes} ${period}`;
 }
 
-/**
- * Generate dropdown options for time selection
- * Returns array of times in 12-hour format with 30-minute increments
- * Range: 8:00 AM to 10:00 PM
- */
-export function generateTimeOptions(): string[] {
-  const options: string[] = [];
-  // Start at 8:00 AM (hour=8, minute=0) and end at 10:00 PM (hour=22, minute=0)
-  let currentHour = 8;
-  let currentMinute = 0;
-
-  while (currentHour < 22 || (currentHour === 22 && currentMinute === 0)) {
-    const period = currentHour < 12 ? 'AM' : 'PM';
-    const displayHour = currentHour === 0 ? 12 : currentHour > 12 ? currentHour - 12 : currentHour;
-    const timeStr = `${displayHour}:${String(currentMinute).padStart(2, '0')} ${period}`;
-    options.push(timeStr);
-
-    // Increment by 30 minutes
-    currentMinute += 30;
-    if (currentMinute >= 60) {
-      currentMinute = 0;
-      currentHour++;
-    }
-  }
-
-  return options;
-}

@@ -5,7 +5,8 @@ import { useAvailability } from './hooks/useAvailability';
 import { Session, FilterState, TIME_SLOTS, SECTORS, THEMATICS, FORMATS, classifyTag } from './types/session';
 import { cn } from '@/lib/utils';
 import { downloadICS } from '@/lib/calendar';
-import { presetToTimeRange, generateTimeOptions, convert12to24, convert24to12 } from './lib/timeUtils';
+import { presetToTimeRange, convert12to24, convert24to12 } from './lib/timeUtils';
+import { getBaseSpeakerName } from './lib/speakerUtils';
 import './index.css';
 
 function App() {
@@ -33,7 +34,6 @@ function App() {
   const [showSpeakerSuggestions, setShowSpeakerSuggestions] = useState(false);
 
   const { ranges: availabilityRanges, rememberAvailability, addTimeRange, removeTimeRange, clearAllRanges, toggleRemember } = useAvailability();
-  const [showAvailabilityPanel, setShowAvailabilityPanel] = useState(false);
   const [availStartTime, setAvailStartTime] = useState('9:00');
   const [availEndTime, setAvailEndTime] = useState('5:00');
   const [startPeriod, setStartPeriod] = useState<'AM' | 'PM'>('AM');
@@ -80,11 +80,55 @@ function App() {
       .slice(0, 6);
   }, [speakerInput, uniqueSpeakers, filters.speakers]);
 
-  const filteredSessions = useFilteredSessions(sessions, filters, searchQuery, speakerInput, partnerInput, availabilityRanges);
+  const rawFilteredSessions = useFilteredSessions(sessions, filters, searchQuery, speakerInput, partnerInput, availabilityRanges);
+
+  // Sort sessions by date and time chronologically
+  const filteredSessions = useMemo(() => {
+    return [...rawFilteredSessions].sort((a, b) => {
+      // Parse dates (format: "16 Feb 2026")
+      const dateA = new Date(a.date);
+      const dateB = new Date(b.date);
+
+      if (dateA.getTime() !== dateB.getTime()) {
+        return dateA.getTime() - dateB.getTime();
+      }
+
+      // If same date, sort by time
+      const timeA = a.time.toLowerCase();
+      const timeB = b.time.toLowerCase();
+
+      // Extract hour and convert to 24-hour format for comparison
+      const getTimeValue = (time: string) => {
+        const match = time.match(/(\d{1,2}):(\d{2})\s*(am|pm)?/i);
+        if (!match) return 0;
+
+        let hours = parseInt(match[1]);
+        const minutes = parseInt(match[2]);
+        const period = match[3]?.toLowerCase();
+
+        if (period === 'pm' && hours !== 12) hours += 12;
+        if (period === 'am' && hours === 12) hours = 0;
+
+        return hours * 60 + minutes;
+      };
+
+      return getTimeValue(timeA) - getTimeValue(timeB);
+    });
+  }, [rawFilteredSessions]);
+
   const scheduledSessions = sessions.filter((s) => schedule.includes(s.id));
 
+  // When filtering by speaker, show featured session AND include it in chronological list
+  const hasSpeakerFilter = filters.speakers.length > 0 || speakerInput.trim().length > 0;
+
   const featuredSession = filteredSessions[0];
-  const regularSessions = filteredSessions.slice(1);
+  // When searching by speaker, show ALL sessions including the featured one
+  const regularSessions = hasSpeakerFilter ? filteredSessions : filteredSessions.slice(1);
+
+  // Calculate dates that have sessions (for highlighting when speaker filter is active)
+  const datesWithSessions = useMemo(() => {
+    return new Set(filteredSessions.map(s => s.date));
+  }, [filteredSessions]);
 
   const topSpeakers = useMemo(() => {
     const speakerCount: Record<string, number> = {};
@@ -266,8 +310,12 @@ function App() {
                   <Users size={28} className="text-white" />
                 </div>
                 <div>
-                  <p className="text-white/60 text-sm">Speakers</p>
-                  <p className="text-white font-medium">{featuredSession.speakers.length > 0 ? featuredSession.speakers.slice(0, 2).join(', ') : 'TBA'}</p>
+                  <p className="text-white/60 text-sm">Speakers ({featuredSession.speakers.length})</p>
+                  <p className="text-white font-medium line-clamp-3">
+                    {featuredSession.speakers.length > 0
+                      ? featuredSession.speakers.map(s => getBaseSpeakerName(s)).join(', ')
+                      : 'TBA'}
+                  </p>
                 </div>
               </div>
 
@@ -562,6 +610,53 @@ function App() {
             </label>
           </div>
 
+          {/* Knowledge Partners Filter */}
+          <div className="col-span-12 sm:col-span-6 row-span-1 glass-card p-4">
+            <div className="flex items-center gap-3 mb-2">
+              <Users size={16} className="text-green-400 shrink-0" />
+              <span className="text-white/50 text-xs shrink-0">Knowledge Partners:</span>
+            </div>
+            <div className="relative" onClick={(e) => e.stopPropagation()}>
+              <input
+                type="text"
+                value={partnerInput}
+                onChange={(e) => { setPartnerInput(e.target.value); setShowPartnerSuggestions(true); }}
+                onFocus={() => setShowPartnerSuggestions(true)}
+                placeholder="Type partner name..."
+                className="w-full h-9 px-3 rounded-lg bg-white/5 border border-white/10 text-white text-sm placeholder:text-white/40 focus:outline-none focus:border-green-500/50"
+              />
+              {showPartnerSuggestions && filteredPartnerSuggestions.length > 0 && (
+                <div className="absolute z-50 bottom-full mb-1 w-full glass-modal rounded-lg border border-white/10 py-1 max-h-48 overflow-y-auto">
+                  {filteredPartnerSuggestions.map((partner) => (
+                    <button
+                      key={partner}
+                      onClick={() => {
+                        toggleFilter('knowledgePartners', partner);
+                        setPartnerInput('');
+                        setShowPartnerSuggestions(false);
+                      }}
+                      className="w-full text-left px-3 py-2 text-sm text-white/80 hover:bg-white/10 transition-colors truncate"
+                    >
+                      {partner}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+            {filters.knowledgePartners.length > 0 && (
+              <div className="flex flex-wrap gap-1.5 mt-2">
+                {filters.knowledgePartners.map((partner) => (
+                  <span key={partner} className="flex items-center gap-1 px-2 py-1 rounded-lg bg-green-500/20 text-green-300 text-xs font-medium border border-green-500/30">
+                    {partner.length > 25 ? partner.substring(0, 25) + '...' : partner}
+                    <button onClick={() => toggleFilter('knowledgePartners', partner)} className="hover:text-white">
+                      <X size={12} />
+                    </button>
+                  </span>
+                ))}
+              </div>
+            )}
+          </div>
+
           {/* Sector/Domain Filter - inline for mobile, hidden on xl (shown in sidebar) */}
           <div className="col-span-12 row-span-1 glass-card p-4 xl:hidden">
             <div className="flex items-center gap-3 mb-2">
@@ -634,55 +729,8 @@ function App() {
             </div>
           </div>
 
-          {/* Knowledge Partners Filter */}
-          <div className="col-span-12 sm:col-span-6 row-span-1 glass-card p-4">
-            <div className="flex items-center gap-3 mb-2">
-              <Users size={16} className="text-green-400 shrink-0" />
-              <span className="text-white/50 text-xs shrink-0">Knowledge Partners:</span>
-            </div>
-            <div className="relative" onClick={(e) => e.stopPropagation()}>
-              <input
-                type="text"
-                value={partnerInput}
-                onChange={(e) => { setPartnerInput(e.target.value); setShowPartnerSuggestions(true); }}
-                onFocus={() => setShowPartnerSuggestions(true)}
-                placeholder="Type partner name..."
-                className="w-full h-9 px-3 rounded-lg bg-white/5 border border-white/10 text-white text-sm placeholder:text-white/40 focus:outline-none focus:border-green-500/50"
-              />
-              {showPartnerSuggestions && filteredPartnerSuggestions.length > 0 && (
-                <div className="absolute z-50 bottom-full mb-1 w-full glass-modal rounded-lg border border-white/10 py-1 max-h-48 overflow-y-auto">
-                  {filteredPartnerSuggestions.map((partner) => (
-                    <button
-                      key={partner}
-                      onClick={() => {
-                        toggleFilter('knowledgePartners', partner);
-                        setPartnerInput('');
-                        setShowPartnerSuggestions(false);
-                      }}
-                      className="w-full text-left px-3 py-2 text-sm text-white/80 hover:bg-white/10 transition-colors truncate"
-                    >
-                      {partner}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-            {filters.knowledgePartners.length > 0 && (
-              <div className="flex flex-wrap gap-1.5 mt-2">
-                {filters.knowledgePartners.map((partner) => (
-                  <span key={partner} className="flex items-center gap-1 px-2 py-1 rounded-lg bg-green-500/20 text-green-300 text-xs font-medium border border-green-500/30">
-                    {partner.length > 25 ? partner.substring(0, 25) + '...' : partner}
-                    <button onClick={() => toggleFilter('knowledgePartners', partner)} className="hover:text-white">
-                      <X size={12} />
-                    </button>
-                  </span>
-                ))}
-              </div>
-            )}
-          </div>
-
           {/* Speakers Filter */}
-          <div className="col-span-12 sm:col-span-6 row-span-1 glass-card p-4">
+          <div className="col-span-12 sm:col-span-6 row-span-2 glass-card p-4">
             <div className="flex items-center gap-3 mb-2">
               <Users size={16} className="text-orange-400 shrink-0" />
               <span className="text-white/50 text-xs shrink-0">Speakers:</span>
@@ -772,20 +820,26 @@ function App() {
           {/* Date Filter Pills */}
           <div className="col-span-12 row-span-1 flex items-center gap-3 overflow-x-auto scrollbar-hide py-2">
             <span className="text-white/50 text-sm shrink-0">Dates:</span>
-            {uniqueDates.map((date) => (
-              <button
-                key={date}
-                onClick={() => toggleFilter('dates', date)}
-                className={cn(
-                  "px-4 py-2 rounded-xl text-sm font-medium whitespace-nowrap transition-all",
-                  filters.dates.includes(date)
-                    ? "accent-gradient text-white"
-                    : "glass-card text-white/70 hover:text-white"
-                )}
-              >
-                {date}
-              </button>
-            ))}
+            {uniqueDates.map((date) => {
+              const hasSessionsOnDate = datesWithSessions.has(date);
+              const isHighlighted = hasSpeakerFilter && hasSessionsOnDate;
+              return (
+                <button
+                  key={date}
+                  onClick={() => toggleFilter('dates', date)}
+                  className={cn(
+                    "px-4 py-2 rounded-xl text-sm font-medium whitespace-nowrap transition-all",
+                    filters.dates.includes(date)
+                      ? "accent-gradient text-white"
+                      : isHighlighted
+                      ? "bg-orange-500/20 text-orange-300 border border-orange-500/50 hover:bg-orange-500/30"
+                      : "glass-card text-white/70 hover:text-white"
+                  )}
+                >
+                  {date}
+                </button>
+              );
+            })}
           </div>
 
           {/* Session Grid */}
