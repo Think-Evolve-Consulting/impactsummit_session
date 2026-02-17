@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
-import { Session, FilterState, inferTopic, classifyTag } from '../types/session';
+import { Session, FilterState, inferTopic, classifyTag, TimeRange } from '../types/session';
+import { parseSessionTime, timeRangesOverlap } from '../lib/timeUtils';
 
 interface RawSession {
   title: string;
@@ -46,6 +47,7 @@ export function useFilteredSessions(
   searchQuery: string,
   speakerQuery = '',
   partnerQuery = '',
+  availabilityRanges: TimeRange[] = [],
 ) {
   return useMemo(() => {
     let filtered = sessions;
@@ -136,7 +138,7 @@ export function useFilteredSessions(
         const period = timeMatch[3]?.toUpperCase();
         if (period === 'PM' && hour !== 12) hour += 12;
         if (period === 'AM' && hour === 12) hour = 0;
-        
+
         return filters.timeSlots.some((slot) => {
           if (slot === 'Morning') return hour < 12;
           if (slot === 'Afternoon') return hour >= 12 && hour < 17;
@@ -146,8 +148,17 @@ export function useFilteredSessions(
       });
     }
 
+    // Availability filter
+    if (availabilityRanges.length > 0) {
+      filtered = filtered.filter((session) => {
+        const parsedTime = parseSessionTime(session.time);
+        if (!parsedTime) return true; // Unparseable → pass through
+        return timeRangesOverlap(parsedTime.start, parsedTime.end, availabilityRanges);
+      });
+    }
+
     return filtered;
-  }, [sessions, filters, searchQuery, speakerQuery, partnerQuery]);
+  }, [sessions, filters, searchQuery, speakerQuery, partnerQuery, availabilityRanges]);
 }
 
 export function useSchedule() {
