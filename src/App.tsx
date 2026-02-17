@@ -610,6 +610,53 @@ function App() {
             </label>
           </div>
 
+          {/* Knowledge Partners Filter */}
+          <div className="col-span-12 sm:col-span-6 row-span-1 glass-card p-4">
+            <div className="flex items-center gap-3 mb-2">
+              <Users size={16} className="text-green-400 shrink-0" />
+              <span className="text-white/50 text-xs shrink-0">Knowledge Partners:</span>
+            </div>
+            <div className="relative" onClick={(e) => e.stopPropagation()}>
+              <input
+                type="text"
+                value={partnerInput}
+                onChange={(e) => { setPartnerInput(e.target.value); setShowPartnerSuggestions(true); }}
+                onFocus={() => setShowPartnerSuggestions(true)}
+                placeholder="Type partner name..."
+                className="w-full h-9 px-3 rounded-lg bg-white/5 border border-white/10 text-white text-sm placeholder:text-white/40 focus:outline-none focus:border-green-500/50"
+              />
+              {showPartnerSuggestions && filteredPartnerSuggestions.length > 0 && (
+                <div className="absolute z-50 bottom-full mb-1 w-full glass-modal rounded-lg border border-white/10 py-1 max-h-48 overflow-y-auto">
+                  {filteredPartnerSuggestions.map((partner) => (
+                    <button
+                      key={partner}
+                      onClick={() => {
+                        toggleFilter('knowledgePartners', partner);
+                        setPartnerInput('');
+                        setShowPartnerSuggestions(false);
+                      }}
+                      className="w-full text-left px-3 py-2 text-sm text-white/80 hover:bg-white/10 transition-colors truncate"
+                    >
+                      {partner}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+            {filters.knowledgePartners.length > 0 && (
+              <div className="flex flex-wrap gap-1.5 mt-2">
+                {filters.knowledgePartners.map((partner) => (
+                  <span key={partner} className="flex items-center gap-1 px-2 py-1 rounded-lg bg-green-500/20 text-green-300 text-xs font-medium border border-green-500/30">
+                    {partner.length > 25 ? partner.substring(0, 25) + '...' : partner}
+                    <button onClick={() => toggleFilter('knowledgePartners', partner)} className="hover:text-white">
+                      <X size={12} />
+                    </button>
+                  </span>
+                ))}
+              </div>
+            )}
+          </div>
+
           {/* Sector/Domain Filter - inline for mobile, hidden on xl (shown in sidebar) */}
           <div className="col-span-12 row-span-1 glass-card p-4 xl:hidden">
             <div className="flex items-center gap-3 mb-2">
@@ -682,55 +729,8 @@ function App() {
             </div>
           </div>
 
-          {/* Knowledge Partners Filter */}
-          <div className="col-span-12 sm:col-span-6 row-span-1 glass-card p-4">
-            <div className="flex items-center gap-3 mb-2">
-              <Users size={16} className="text-green-400 shrink-0" />
-              <span className="text-white/50 text-xs shrink-0">Knowledge Partners:</span>
-            </div>
-            <div className="relative" onClick={(e) => e.stopPropagation()}>
-              <input
-                type="text"
-                value={partnerInput}
-                onChange={(e) => { setPartnerInput(e.target.value); setShowPartnerSuggestions(true); }}
-                onFocus={() => setShowPartnerSuggestions(true)}
-                placeholder="Type partner name..."
-                className="w-full h-9 px-3 rounded-lg bg-white/5 border border-white/10 text-white text-sm placeholder:text-white/40 focus:outline-none focus:border-green-500/50"
-              />
-              {showPartnerSuggestions && filteredPartnerSuggestions.length > 0 && (
-                <div className="absolute z-50 bottom-full mb-1 w-full glass-modal rounded-lg border border-white/10 py-1 max-h-48 overflow-y-auto">
-                  {filteredPartnerSuggestions.map((partner) => (
-                    <button
-                      key={partner}
-                      onClick={() => {
-                        toggleFilter('knowledgePartners', partner);
-                        setPartnerInput('');
-                        setShowPartnerSuggestions(false);
-                      }}
-                      className="w-full text-left px-3 py-2 text-sm text-white/80 hover:bg-white/10 transition-colors truncate"
-                    >
-                      {partner}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-            {filters.knowledgePartners.length > 0 && (
-              <div className="flex flex-wrap gap-1.5 mt-2">
-                {filters.knowledgePartners.map((partner) => (
-                  <span key={partner} className="flex items-center gap-1 px-2 py-1 rounded-lg bg-green-500/20 text-green-300 text-xs font-medium border border-green-500/30">
-                    {partner.length > 25 ? partner.substring(0, 25) + '...' : partner}
-                    <button onClick={() => toggleFilter('knowledgePartners', partner)} className="hover:text-white">
-                      <X size={12} />
-                    </button>
-                  </span>
-                ))}
-              </div>
-            )}
-          </div>
-
           {/* Speakers Filter */}
-          <div className="col-span-12 sm:col-span-6 row-span-1 glass-card p-4">
+          <div className="col-span-12 sm:col-span-6 row-span-2 glass-card p-4">
             <div className="flex items-center gap-3 mb-2">
               <Users size={16} className="text-orange-400 shrink-0" />
               <span className="text-white/50 text-xs shrink-0">Speakers:</span>
