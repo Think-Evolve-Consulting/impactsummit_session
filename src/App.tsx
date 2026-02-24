@@ -894,6 +894,10 @@ function App() {
 
                 <div className="space-y-2 text-sm">
                   <div className="flex items-center gap-2 text-white/60">
+                    <Calendar size={14} />
+                    <span>{session.date}</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-white/60">
                     <Clock size={14} />
                     <span>{session.time}</span>
                   </div>

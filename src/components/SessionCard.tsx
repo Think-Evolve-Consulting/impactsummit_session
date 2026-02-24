@@ -1,4 +1,4 @@
-import { MapPin, Clock, Users, Bookmark, BookmarkCheck } from 'lucide-react';
+import { MapPin, Clock, Users, Bookmark, BookmarkCheck, Calendar } from 'lucide-react';
 import { Session } from '../types/session';
 
 interface SessionCardProps {
@@ -12,6 +12,7 @@ interface SessionCardProps {
 export function SessionCard({ session, isBookmarked, onToggleBookmark, onClick, size = 'medium' }: SessionCardProps) {
   const isLarge = size === 'large';
   const isSmall = size === 'small';
+
 
   return (
     <div
@@ -41,6 +42,10 @@ export function SessionCard({ session, isBookmarked, onToggleBookmark, onClick, 
         </h3>
 
         <div className={`flex flex-wrap gap-3 text-slate-400 mb-3 ${isSmall ? 'text-xs' : 'text-sm'}`}>
+          <div className="flex items-center gap-1.5">
+            <Calendar size={isSmall ? 12 : 14} className="text-cyan-400" />
+            <span>{session.date}</span>
+          </div>
           <div className="flex items-center gap-1.5">
             <Clock size={isSmall ? 12 : 14} className="text-cyan-400" />
             <span>{session.time}</span>
