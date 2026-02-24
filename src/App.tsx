@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { Calendar, Search, X, Clock, MapPin, Users, Bookmark, BookmarkCheck, ChevronRight, Download, Tag, Layers, Layout, Github } from 'lucide-react';
+import { Calendar, Search, X, Clock, MapPin, Users, Bookmark, BookmarkCheck, ChevronRight, Download, Tag, Layers, Layout, Github, Play, VideoOff } from 'lucide-react';
 import { useSessions, useFilteredSessions, useSchedule } from './hooks/useSessions';
 import { useAvailability } from './hooks/useAvailability';
 import { Session, FilterState, TIME_SLOTS, SECTORS, THEMATICS, FORMATS, classifyTag } from './types/session';
@@ -870,12 +870,31 @@ function App() {
                 )}
               >
                 <div className="flex items-start justify-between mb-3">
-                  <span className={cn(
-                    "px-2 py-1 rounded-lg text-xs font-medium",
-                    idx % 3 === 0 ? "tag-purple" : idx % 3 === 1 ? "tag-cyan" : "tag-blue"
-                  )}>
-                    {session.topic}
-                  </span>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className={cn(
+                      "px-2 py-1 rounded-lg text-xs font-medium",
+                      idx % 3 === 0 ? "tag-purple" : idx % 3 === 1 ? "tag-cyan" : "tag-blue"
+                    )}>
+                      {session.topic}
+                    </span>
+                    {session.youtube_url ? (
+                      <a
+                        href={session.youtube_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        onClick={(e) => e.stopPropagation()}
+                        className="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-medium bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 hover:bg-cyan-500/35 hover:text-cyan-200 transition-all duration-200"
+                      >
+                        <Play size={10} className="fill-current" />
+                        Watch Session
+                      </a>
+                    ) : (
+                      <span className="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-xs bg-white/5 text-white/30 border border-white/10">
+                        <VideoOff size={10} />
+                        Link not available
+                      </span>
+                    )}
+                  </div>
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
@@ -962,6 +981,23 @@ function App() {
 
             <div className="p-8">
               <span className="tag-purple px-3 py-1 rounded-full text-xs font-medium">{selectedSession.topic}</span>
+
+              {selectedSession.youtube_url ? (
+                <a
+                  href={selectedSession.youtube_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="mt-4 w-full flex items-center justify-center gap-2 py-3 px-4 rounded-xl font-semibold text-sm bg-gradient-to-r from-cyan-500 to-purple-500 text-white hover:opacity-90 transition-all duration-200 shadow-md"
+                >
+                  <Play size={14} className="fill-current" />
+                  Watch the Session
+                </a>
+              ) : (
+                <div className="mt-4 w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-xs bg-white/5 text-white/30 border border-white/10">
+                  <VideoOff size={13} />
+                  Link not available
+                </div>
+              )}
 
               <h2 className="text-2xl font-bold text-white mt-4 mb-6 pr-8">{selectedSession.title}</h2>
 

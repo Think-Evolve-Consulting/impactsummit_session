@@ -13,6 +13,18 @@ interface RawSession {
   description: string;
   knowledge_partners: string[];
   tags?: string[];
+  youtube_url?: string;
+  url?: string;
+}
+
+function resolveYoutubeUrl(raw: string | undefined): string | undefined {
+  if (!raw) return undefined;
+  const trimmed = raw.trim();
+  if (trimmed.startsWith('https://') || trimmed.startsWith('http://')) return trimmed;
+  if (trimmed.startsWith('youtube.com/') || trimmed.startsWith('www.youtube.com/')) {
+    return `https://www.${trimmed.replace(/^www\./, '')}`;
+  }
+  return undefined;
 }
 
 export function useSessions() {
@@ -21,7 +33,7 @@ export function useSessions() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    fetch('/data/sessions.json')
+    fetch('/data/fullWebsite.json')
       .then((res) => res.json())
       .then((data: RawSession[]) => {
         // Create speaker name mapping to consolidate variations
@@ -35,6 +47,7 @@ export function useSessions() {
           topic: inferTopic(session.title, session.description),
           tags: session.tags || [],
           speakers: normalizeSpeakers(session.speakers, speakerMapping),
+          youtube_url: resolveYoutubeUrl(session.url) ?? resolveYoutubeUrl(session.youtube_url),
         }));
         setSessions(processedSessions);
         setLoading(false);
