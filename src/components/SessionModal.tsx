@@ -1,4 +1,5 @@
-import { X, MapPin, Clock, Users, Building2, Bookmark, BookmarkCheck } from 'lucide-react';
+import { useState } from 'react';
+import { X, MapPin, Clock, Users, Building2, Bookmark, BookmarkCheck, Play, VideoOff } from 'lucide-react';
 import { Session } from '../types/session';
 
 interface SessionModalProps {
@@ -9,6 +10,13 @@ interface SessionModalProps {
 }
 
 export function SessionModal({ session, isBookmarked, onToggleBookmark, onClose }: SessionModalProps) {
+  const [showNoVideoToast, setShowNoVideoToast] = useState(false);
+
+  const handleNoVideoClick = () => {
+    setShowNoVideoToast(true);
+    setTimeout(() => setShowNoVideoToast(false), 3000);
+  };
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={onClose}>
       <div className="absolute inset-0 bg-black/80 backdrop-blur-md" />
@@ -27,6 +35,35 @@ export function SessionModal({ session, isBookmarked, onToggleBookmark, onClose 
           <span className="inline-block px-3 py-1 text-xs font-medium bg-purple-500/20 text-purple-300 rounded-lg mb-4">
             {session.topic}
           </span>
+
+          {session.youtube_url ? (
+            <a
+              href={session.youtube_url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="block w-full mb-5 py-3 px-4 rounded-xl font-semibold text-sm transition-all duration-200 flex items-center justify-center gap-2 bg-red-700 text-white border border-red-600 hover:bg-red-600 shadow-md shadow-red-900/40"
+            >
+              <Play size={14} className="fill-current" />
+              Watch the Session
+            </a>
+          ) : (
+            <div className="relative mb-5">
+              <button
+                onClick={handleNoVideoClick}
+                className="w-full py-2.5 px-4 rounded-xl text-xs flex items-center justify-center gap-2 bg-slate-700 text-slate-400 border border-slate-600 hover:bg-slate-600 hover:text-slate-300 transition-all duration-200 cursor-pointer"
+              >
+                <VideoOff size={13} />
+                Session recording not available
+              </button>
+              {showNoVideoToast && (
+                <div className="absolute -top-12 left-1/2 -translate-x-1/2 z-10 bg-slate-800 border border-yellow-500/40 rounded-xl px-4 py-2.5 text-xs text-slate-200 shadow-xl whitespace-nowrap flex items-center gap-2">
+                  <VideoOff size={13} className="text-yellow-400" />
+                  <span>No recording available for this session</span>
+                  <div className="absolute top-full left-1/2 -translate-x-1/2 w-2 h-2 bg-slate-800 border-r border-b border-yellow-500/40 rotate-45 -mt-1" />
+                </div>
+              )}
+            </div>
+          )}
 
           <h2 className="text-xl font-bold text-white mb-6 pr-8">
             {session.title}

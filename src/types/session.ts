@@ -10,6 +10,7 @@ export interface Session {
   knowledge_partners: string[];
   topic?: string;
   tags: string[];
+  youtube_url?: string;
 }
 
 export interface FilterState {
